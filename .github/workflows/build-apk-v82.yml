@@ -1,0 +1,55 @@
+
+name: Build Blue Big Fish V82 APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'V82-part-00'
+      - 'V82-part-01'
+      - 'V82-part-02'
+      - 'V82-part-03'
+      - 'V82-part-04'
+      - '.github/workflows/build-apk-v82.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Reassemble project ZIP
+        run: |
+          cat V82-part-00 V82-part-01 V82-part-02 V82-part-03 V82-part-04 > V82-Android-Project.zip
+          unzip -tq V82-Android-Project.zip
+          unzip -q V82-Android-Project.zip -d source
+          test -f source/V82-work/settings.gradle.kts
+
+      - name: Build debug APK
+        working-directory: source/V82-work
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: blue-big-fish-v82-apk
+          path: source/V82-work/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
